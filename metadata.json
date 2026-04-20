@@ -1,0 +1,6 @@
+{
+  "name": "Haras del Bosque - Administración de Reservas",
+  "description": "A high-performance reservation grid that emulates Excel's spreadsheet behavior with drag-to-select functionality, specifically designed for property management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
