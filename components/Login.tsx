@@ -25,9 +25,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToPublic }) => {
 
     let role: UserRole | null = null;
     
-    if (username === 'sadmin' && password === 'sadmin') role = 'superadmin';
-    else if (username === 'admin' && password === 'admin') role = 'admin';
-    else if (username === 'user' && password === 'user') role = 'user';
+    const sadminPassword = import.meta.env.VITE_SADMIN_PASSWORD;
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+    const userPassword = import.meta.env.VITE_USER_PASSWORD;
+
+    if (username === 'sadmin' && password === sadminPassword) role = 'superadmin';
+    else if (username === 'admin' && password === adminPassword) role = 'admin';
+    else if (username === 'user' && password === userPassword) role = 'user';
 
     if (role) {
       onLogin({ username, role, isLoggedIn: true });

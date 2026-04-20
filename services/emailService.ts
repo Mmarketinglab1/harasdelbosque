@@ -1,14 +1,10 @@
 
 import emailjs from '@emailjs/browser';
 
-const getEnv = (key: string) => {
-  return (window as any).process?.env?.[key] || '';
-};
-
-const SERVICE_ID = getEnv('EMAILJS_SERVICE_ID');
-const TEMPLATE_RESERVATION_ID = getEnv('EMAILJS_TEMPLATE_RESERVATION_ID');
-const TEMPLATE_PAYMENT_ID = getEnv('EMAILJS_TEMPLATE_PAYMENT_ID');
-const PUBLIC_KEY = getEnv('EMAILJS_PUBLIC_KEY');
+const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const TEMPLATE_RESERVATION_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_RESERVATION_ID;
+const TEMPLATE_PAYMENT_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_PAYMENT_ID;
+const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 // Inicializar EmailJS con la clave pública
 if (PUBLIC_KEY) {
