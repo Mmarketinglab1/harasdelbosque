@@ -129,6 +129,83 @@ const loadBookingData = async () => {
   };
 };
 
+const tableByResource = {
+  rooms: { table: 'rooms', order: 'number' },
+  reservations: { table: 'reservations' },
+  guests: { table: 'guests' },
+  'special-prices': { table: 'special_prices' },
+};
+
+const requireSupabase = () => {
+  if (!supabase) {
+    throw new Error('Faltan SUPABASE_URL/SUPABASE_ANON_KEY o VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY.');
+  }
+};
+
+const handleAdminApi = async (req, res, url) => {
+  requireSupabase();
+
+  if (url.pathname === '/api/admin/full-data') {
+    if (req.method === 'GET') {
+      const data = await loadBookingData();
+      const { data: guests, error: guestsError } = await supabase.from('guests').select('*');
+      if (guestsError) throw guestsError;
+      return json(res, 200, {
+        rooms: data.rooms,
+        reservations: data.reservations,
+        special_prices: data.specialPrices,
+        guests: guests || [],
+      });
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req);
+      if (body.rooms) for (const room of body.rooms) await supabase.from('rooms').upsert(room, { onConflict: 'id' });
+      if (body.reservations) for (const reservation of body.reservations) await supabase.from('reservations').upsert(reservation, { onConflict: 'id' });
+      if (body.guests) for (const guest of body.guests) await supabase.from('guests').upsert(guest, { onConflict: 'id' });
+      if (body.special_prices) for (const price of body.special_prices) await supabase.from('special_prices').upsert(price, { onConflict: 'id' });
+      return json(res, 200, { success: true });
+    }
+
+    return json(res, 405, { error: 'method_not_allowed' });
+  }
+
+  const match = url.pathname.match(/^\/api\/admin\/([^/]+)(?:\/([^/]+))?$/);
+  if (!match) return false;
+
+  const [, resource, id] = match;
+  const config = tableByResource[resource];
+  if (!config) return json(res, 404, { error: 'not_found' });
+
+  if (req.method === 'GET') {
+    let query = supabase.from(config.table).select('*');
+    if (config.order) query = query.order(config.order);
+    const { data, error } = await query;
+    if (error) throw error;
+    return json(res, 200, data || []);
+  }
+
+  if (req.method === 'POST') {
+    const body = await parseBody(req);
+    const { data, error } = await supabase
+      .from(config.table)
+      .upsert(body, { onConflict: 'id' })
+      .select()
+      .single();
+    if (error) throw error;
+    return json(res, 200, data);
+  }
+
+  if (req.method === 'DELETE') {
+    if (!id) return json(res, 400, { error: 'missing_id' });
+    const { error } = await supabase.from(config.table).delete().eq('id', id);
+    if (error) throw error;
+    return json(res, 200, { success: true });
+  }
+
+  return json(res, 405, { error: 'method_not_allowed' });
+};
+
 const handleAvailability = async (req, res, url) => {
   if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
 
@@ -307,6 +384,10 @@ createServer(async (req, res) => {
 
     if (url.pathname === '/api/bot/reserve') {
       return await handleReserve(req, res);
+    }
+
+    if (url.pathname.startsWith('/api/admin/')) {
+      return await handleAdminApi(req, res, url);
     }
 
     return await serveStatic(req, res, url);
