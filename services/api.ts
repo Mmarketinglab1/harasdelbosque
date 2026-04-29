@@ -4,9 +4,12 @@ import { Reservation, Room, SpecialPrice, Guest } from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const runtimeEnv = (window as any).process?.env || {};
+const resolvedSupabaseUrl = supabaseUrl || runtimeEnv.VITE_SUPABASE_URL || runtimeEnv.SUPABASE_URL;
+const resolvedSupabaseAnonKey = supabaseAnonKey || runtimeEnv.VITE_SUPABASE_ANON_KEY || runtimeEnv.SUPABASE_ANON_KEY;
 
-export const supabase = (supabaseUrl && supabaseAnonKey) 
-  ? createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = (resolvedSupabaseUrl && resolvedSupabaseAnonKey) 
+  ? createClient(resolvedSupabaseUrl, resolvedSupabaseAnonKey)
   : null;
 
 const LS_KEYS = {

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { createReadStream, existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +32,31 @@ const json = (res, status, payload) => {
     'Access-Control-Allow-Headers': 'Content-Type,Authorization',
   });
   res.end(JSON.stringify(payload));
+};
+
+const publicEnvKeys = [
+  'SUPABASE_URL',
+  'SUPABASE_ANON_KEY',
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_ANON_KEY',
+  'EMAILJS_SERVICE_ID',
+  'EMAILJS_TEMPLATE_RESERVATION_ID',
+  'EMAILJS_TEMPLATE_PAYMENT_ID',
+  'EMAILJS_PUBLIC_KEY',
+  'VITE_EMAILJS_SERVICE_ID',
+  'VITE_EMAILJS_TEMPLATE_RESERVATION_ID',
+  'VITE_EMAILJS_TEMPLATE_PAYMENT_ID',
+  'VITE_EMAILJS_PUBLIC_KEY',
+];
+
+const publicEnvScript = () => {
+  const env = Object.fromEntries(
+    publicEnvKeys
+      .filter((key) => process.env[key])
+      .map((key) => [key, process.env[key]])
+  );
+
+  return `<script>window.process=window.process||{};window.process.env=${JSON.stringify(env)};</script>`;
 };
 
 const parseBody = async (req) => {
@@ -287,6 +313,13 @@ const serveStatic = async (req, res, url) => {
   }
 
   const ext = extname(filePath);
+  if (ext === '.html') {
+    const html = await readFile(filePath, 'utf8');
+    res.writeHead(200, { 'Content-Type': contentTypes[ext] });
+    res.end(html.replace('</head>', `${publicEnvScript()}</head>`));
+    return;
+  }
+
   res.writeHead(200, { 'Content-Type': contentTypes[ext] || 'application/octet-stream' });
   createReadStream(filePath).pipe(res);
 };
